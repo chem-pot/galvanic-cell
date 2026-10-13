@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>화학 전지 시뮬레이터</title>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f6fb; --card:#ffffff; --line:#dce5f0; --ink:#1c2838; --sub:#5d6d82;
+  --blue:#2563eb; --blue-soft:#e8f0fe; --ox:#e11d48; --ox-soft:#fde8ee; --rd:#2563eb; --rd-soft:#e6efff;
+  --chem:"STIX Two Text", Georgia, "Times New Roman", serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Nanum Gothic","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.55}
+header{padding:18px 22px 6px;max-width:1400px;margin:0 auto}
+header h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.3px}
+header h1 span{color:var(--blue)}
+header p{margin:4px 0 0;color:var(--sub);font-size:14px}
+.wrap{max-width:1400px;margin:0 auto;padding:10px 22px 26px;display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 10px rgba(30,60,110,.05)}
+.card h2{font-size:15px;margin:0 0 10px;font-weight:800;display:flex;align-items:center;gap:6px}
+.card h2::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--blue)}
+.pad{padding:14px 16px}
+/* controls */
+.controls{padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.tabs{display:flex;background:#eef3fa;border-radius:12px;padding:3px}
+.tabs button{border:0;background:transparent;padding:7px 12px;border-radius:9px;font:inherit;font-size:14px;font-weight:700;color:var(--sub);cursor:pointer}
+.tabs button.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(30,60,110,.12)}
+.grp{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--sub)}
+select{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 11px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;color:var(--ink)}
+.btn:hover{border-color:#b7c7dd}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+input[type=range]{accent-color:var(--blue);width:100px}
+.toggles{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer;user-select:none;background:#fff}
+.chip input{accent-color:var(--blue);margin:0}
+.chip.warn{border-color:#f5c26b;background:#fff8ea}
+.stage{padding:10px}
+canvas{width:100%;height:auto;display:block;border-radius:12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:4px 8px 6px;font-size:13px;color:var(--sub)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-2px}
+/* side */
+.side{display:flex;flex-direction:column;gap:14px}
+.eq{font-family:var(--chem);font-size:17px;padding:7px 10px;border-radius:10px;margin-bottom:6px;line-height:1.4}
+.eq .tag{display:inline-block;font-family:"Nanum Gothic",sans-serif;font-size:12px;font-weight:800;border-radius:6px;padding:1px 7px;margin-right:6px;vertical-align:2px}
+.eq.ox{background:var(--ox-soft)} .eq.ox .tag{background:var(--ox);color:#fff}
+.eq.rd{background:var(--rd-soft)} .eq.rd .tag{background:var(--rd);color:#fff}
+.eq.tot{background:#f4f6f9} .eq.tot .tag{background:#475569;color:#fff}
+.ecell{margin-top:10px;padding:10px 12px;border:1.5px dashed #b9cbe6;border-radius:12px;font-family:var(--chem);font-size:17px;line-height:1.7}
+.ecell b{font-size:20px;color:var(--blue)}
+.ecell .k{font-family:"Nanum Gothic",sans-serif;font-size:13px;color:var(--sub)}
+.hidden-val{background:#1c2838;color:#1c2838;border-radius:5px;padding:0 4px;cursor:pointer}
+.note{font-size:13px;color:#7a5a12;background:#fff8e6;border:1px solid #f4dfa6;border-radius:10px;padding:8px 10px;margin-top:10px}
+.note b{color:#5d4206}
+.she-box{font-size:14px;background:var(--blue-soft);border-radius:10px;padding:9px 11px;margin-bottom:10px;line-height:1.6}
+.she-box .chemi{font-family:var(--chem);font-size:16px}
+.counts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.cnt{border-radius:12px;padding:8px 6px;text-align:center;background:#f5f8fc;border:1px solid var(--line)}
+.cnt .v{font-size:24px;font-weight:800;font-family:var(--chem)}
+.cnt .l{font-size:12px;color:var(--sub);line-height:1.3}
+.cnt.a .v{color:var(--ox)} .cnt.e .v{color:#b38600} .cnt.c .v{color:var(--rd)}
+.ratio{margin-top:8px;font-size:13.5px;color:var(--sub);text-align:center}
+.ratio span{font-family:var(--chem);font-size:16px;color:var(--ink)}
+.bridgecnt{margin-top:6px;font-size:13px;color:var(--sub);text-align:center}
+ul.obs{margin:0;padding-left:18px;font-size:14px}
+ul.obs li{margin-bottom:5px}
+ul.obs .chemi{font-family:var(--chem);font-size:15.5px}
+.foot{font-size:12px;color:var(--sub);margin-top:8px}
+sup,sub{font-size:.68em;line-height:0}
+@media (max-width:1000px){.wrap{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>표준 환원 전위와 <span>화학 전지</span> 시뮬레이터</h1>
+  <p>입자(원자·이온)와 전자의 이동으로 보는 산화·환원, 그리고 전지 전위 계산 · 25 °C, 1 M, 1 atm 표준 상태</p>
+</header>
+
+<div class="wrap">
+  <main style="display:flex;flex-direction:column;gap:14px;min-width:0">
+    <div class="card controls">
+      <div class="tabs">
+        <button id="tab1" class="on">① 수소 전극으로 E° 측정</button>
+        <button id="tab2">② 두 반쪽 전지 연결</button>
+      </div>
+      <div class="grp" id="m1ctl">금속 반쪽 전지
+        <select id="m1metal"></select>
+      </div>
+      <div class="grp" id="m2ctl" style="display:none">왼쪽
+        <select id="selL"></select>
+        <button class="btn" id="swap" title="좌우 바꾸기">⇄</button>
+        오른쪽 <select id="selR"></select>
+      </div>
+      <div class="grp">
+        <button class="btn primary" id="play">⏸ 일시정지</button>
+        <button class="btn" id="reset">↺ 처음부터</button>
+      </div>
+      <div class="grp">속도 <input type="range" id="speed" min="0.25" max="3" step="0.25" value="1"><span id="spv">1×</span></div>
+      <div class="toggles">
+        <label class="chip"><input type="checkbox" id="tE" checked>전자</label>
+        <label class="chip"><input type="checkbox" id="tLab" checked>입자 기호</label>
+        <label class="chip"><input type="checkbox" id="tBr" checked>염다리 이온</label>
+        <label class="chip"><input type="checkbox" id="tSp" checked>구경꾼 이온</label>
+        <label class="chip warn"><input type="checkbox" id="tHide">값 가리기(예측 활동)</label>
+      </div>
+      <button class="btn" id="png">PNG 저장</button>
+    </div>
+
+    <div class="card stage">
+      <canvas id="cv"></canvas>
+      <div class="legend" id="legend"></div>
+    </div>
+  </main>
+
+  <aside class="side">
+    <div class="card pad">
+      <h2>전지 전위 계산</h2>
+      <div id="calc"></div>
+    </div>
+    <div class="card pad">
+      <h2>입자 수 세기</h2>
+      <div id="count"></div>
+    </div>
+    <div class="card pad">
+      <h2>표준 환원 전위 (E°)</h2>
+      <div id="ladder"></div>
+      <div class="foot">※ 교과서·자료에 따라 값이 0.01~0.02 V 다를 수 있어요.</div>
+    </div>
+    <div class="card pad">
+      <h2>관찰 포인트</h2>
+      <ul class="obs" id="obs"></ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+/* =========================================================
+   데이터
+   ========================================================= */
+const METALS = {
+  Mg:{sym:'Mg',name:'마그네슘',n:2,E:-2.37,ion:'Mg²⁺',ionH:'Mg<sup>2+</sup>',salt:'MgSO₄',anion:'SO₄²⁻',plate:'#dfe3e8',ionCol:'#7f8b9b'},
+  Al:{sym:'Al',name:'알루미늄',n:3,E:-1.66,ion:'Al³⁺',ionH:'Al<sup>3+</sup>',salt:'Al(NO₃)₃',anion:'NO₃⁻',plate:'#e6e9ee',ionCol:'#8d84a6'},
+  Zn:{sym:'Zn',name:'아연',n:2,E:-0.76,ion:'Zn²⁺',ionH:'Zn<sup>2+</sup>',salt:'ZnSO₄',anion:'SO₄²⁻',plate:'#c6cfd9',ionCol:'#5b6b80'},
+  Fe:{sym:'Fe',name:'철',n:2,E:-0.44,ion:'Fe²⁺',ionH:'Fe<sup>2+</sup>',salt:'FeSO₄',anion:'SO₄²⁻',plate:'#8b9097',ionCol:'#5f8a1f',tint:[175,220,170]},
+  Ni:{sym:'Ni',name:'니켈',n:2,E:-0.25,ion:'Ni²⁺',ionH:'Ni<sup>2+</sup>',salt:'NiSO₄',anion:'SO₄²⁻',plate:'#bab5ab',ionCol:'#15803d',tint:[125,210,145]},
+  Sn:{sym:'Sn',name:'주석',n:2,E:-0.14,ion:'Sn²⁺',ionH:'Sn<sup>2+</sup>',salt:'SnSO₄',anion:'SO₄²⁻',plate:'#d5d3cd',ionCol:'#78716c'},
+  Pb:{sym:'Pb',name:'납',n:2,E:-0.13,ion:'Pb²⁺',ionH:'Pb<sup>2+</sup>',salt:'Pb(NO₃)₂',anion:'NO₃⁻',plate:'#7d8996',ionCol:'#3f4b5c'},
+  H: {sym:'H₂',name:'수소',n:2,E:0.00,ion:'H⁺',ionH:'H<sup>+</sup>',salt:'HCl',anion:'Cl⁻',she:true,plate:'#e5e7eb',ionCol:'#e5484d'},
+  Cu:{sym:'Cu',name:'구리',n:2,E:0.34,ion:'Cu²⁺',ionH:'Cu<sup>2+</sup>',salt:'CuSO₄',anion:'SO₄²⁻',plate:'#c98a5b',ionCol:'#1d4ed8',tint:[90,150,235]},
+  Ag:{sym:'Ag',name:'은',n:1,E:0.80,ion:'Ag⁺',ionH:'Ag<sup>+</sup>',salt:'AgNO₃',anion:'NO₃⁻',plate:'#eceef2',ionCol:'#77818f'}
+};
+const ANIONS = {'SO₄²⁻':'#9333ea','NO₃⁻':'#0d9488','Cl⁻':'#16a34a'};
+const ANION_H = {'SO₄²⁻':'SO<sub>4</sub><sup>2−</sup>','NO₃⁻':'NO<sub>3</sub><sup>−</sup>','Cl⁻':'Cl<sup>−</sup>'};
+const K_COL = '#f59e0b';
+const OX_COL = '#e11d48', RD_COL = '#2563eb', E_COL = '#facc15';
+
+/* =========================================================
+   상태
+   ========================================================= */
+const S = {mode:1, m1:'Zn', left:'Zn', right:'Cu', running:true, speed:1,
+           show:{e:true, lab:true, br:true, sp:true, hide:false}};
+let sim = null;
+
+const W = 900, H = 600, DPR = 2;
+const G = {
+  liqTop:330, bBot:520, rimTop:252,
+  beaker:{L:[70,350], R:[550,830]},
+  elX:{L:150, R:750}, legX:{L:300, R:600},
+  bridgeY:215, legBot:440,
+  plateTop:165, plateBot:480, plateW:38,
+  wireY:150, term:{L:420, R:480}, termY:128
+};
+
+const cv = document.getElementById('cv');
+cv.width = W*DPR; cv.height = H*DPR;
+const ctx = cv.getContext('2d');
+
+const $ = id => document.getElementById(id);
+const rnd = (a,b) => a + Math.random()*(b-a);
+const gcd = (a,b) => b ? gcd(b, a%b) : a;
+const lcm = (a,b) => a*b/gcd(a,b);
+const fmtE = E => (E > 0.0001 ? '+' : E < -0.0001 ? '−' : '') + Math.abs(E).toFixed(2);
+const sideKey = s => s === 'L' ? S.left : S.right;
+const metalAt = s => METALS[sideKey(s)];
+const other = s => s === 'L' ? 'R' : 'L';
+
+function cellInfo(){
+  const L = METALS[S.left], R = METALS[S.right];
+  const reading = +(R.E - L.E).toFixed(2);   // 빨간 단자(V) = 오른쪽
+  let anode = null, cath = null;
+  if (reading > 0){ anode = 'L'; cath = 'R'; }
+  else if (reading < 0){ anode = 'R'; cath = 'L'; }
+  return {L, R, reading, anode, cath, ecell: Math.abs(reading)};
+}
+function bridgeSalt(){
+  const needNO3 = [S.left, S.right].some(k => k === 'Ag' || k === 'Pb');
+  return needNO3 ? {name:'KNO₃', an:'NO₃⁻'} : {name:'KCl', an:'Cl⁻'};
+}
+
+/* =========================================================
+   공간 정보
+   ========================================================= */
+function region(side){
+  const [x0,x1] = G.beaker[side];
+  return {x0:x0+14, x1:x1-14, y0:G.liqTop+12, y1:G.bBot-14};
+}
+function obstacles(side){
+  const m = metalAt(side), ex = G.elX[side], lx = G.legX[side];
+  const o = [[lx-22, lx+22, 0, G.legBot+4]];
+  if (m.she) o.push([ex-38, ex+38, 0, 497]);
+  else o.push([ex-24, ex+24, 0, G.plateBot+6]);
+  return o;
+}
+function randPos(side){
+  const R = region(side), O = obstacles(side);
+  for (let i=0;i<60;i++){
+    const x = rnd(R.x0, R.x1), y = rnd(R.y0, R.y1);
+    if (!O.some(o => x > o[0]-6 && x < o[1]+6 && y > o[2] && y < o[3]+8)) return {x,y};
+  }
+  return {x:(R.x0+R.x1)/2, y:R.y1};
+}
+function faceX(side, f){
+  const m = metalAt(side), ex = G.elX[side];
+  if (m.she) return ex + f*18;
+  const e = (sim && sim.ci.anode === side) ? sim.erode[side] : 0;
+  return ex + f*(G.plateW/2 - e*10);
+}
+function surfacePoint(side, f){
+  const m = metalAt(side);
+  if (f === undefined) f = Math.random() < .5 ? -1 : 1;
+  if (m.she) return {x: faceX(side,f), y: rnd(449, 477), f};
+  const e = (sim && sim.ci.anode === side) ? sim.erode[side] : 0;
+  return {x: faceX(side,f), y: rnd(G.liqTop+16, G.plateBot - 10 - e*28), f};
+}
+
+/* =========================================================
+   입자
+   ========================================================= */
+function mkPart(o){
+  return Object.assign({x:0,y:0,vx:0,vy:0,r:12,alpha:1,fade:0,state:'free',wps:null,pv:60,born:sim.t}, o);
+}
+function addCat(side, pos, fadeIn){
+  const m = metalAt(side); const p = pos || randPos(side);
+  sim.parts.push(mkPart({kind:'cat', side, x:p.x, y:p.y, label:m.ion, col:m.ionCol, alpha:fadeIn?0:1, fade:fadeIn?1:0, metal:sideKey(side)}));
+}
+function addAnion(side){
+  const m = metalAt(side); const p = randPos(side);
+  sim.parts.push(mkPart({kind:'an', side, x:p.x, y:p.y, label:m.anion, col:ANIONS[m.anion], r:12}));
+}
+
+function resetSim(){
+  sim = {t:0, parts:[], electrons:[], bubbles:[], h2:[], surfE:[], deposits:{L:[],R:[]},
+         erode:{L:0,R:0}, pendingE:0, reservedE:0, nextEvent:0.2, bridgeFlip:false, hRed:0,
+         cnt:{ox:0, e:0, red:0, bc:0, ba:0}, noise:[], decor:[], sheTimer:0};
+  sim.ci = cellInfo();
+  for (let i=0;i<60;i++) sim.noise.push(Math.random());
+  ['L','R'].forEach(side => {
+    const n = side === sim.ci.cath ? 14 : side === sim.ci.anode ? 8 : 10;
+    for (let i=0;i<n;i++) addCat(side);
+    for (let i=0;i<6;i++) addAnion(side);
+  });
+  // 염다리 속 이온(장식)
+  const path = bridgeCenterline();
+  for (let i=0;i<16;i++){
+    const t = (i+0.5)/16;
+    sim.decor.push({t, k: i%2===0 ? 'K' : 'A', ph: Math.random()*6.28});
+  }
+  sim.decorPath = path;
+  updatePanel();
+}
+
+/* 염다리 경로 */
+function bridgeHalf(to){   // 가운데 → 해당 쪽 다리 끝
+  const R = [[450,215],[550,215],[585.4,229.6],[600,265],[600,440],[600,452]];
+  return to === 'R' ? R.map(p=>[p[0],p[1]]) : R.map(p=>[900-p[0],p[1]]);
+}
+function bridgeCenterline(){
+  const L = bridgeHalf('L').slice(0,5).reverse();
+  const R = bridgeHalf('R').slice(1,5);
+  return L.concat(R);
+}
+function polyLen(pts){
+  const seg=[]; let tot=0;
+  for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(d);tot+=d;}
+  return {seg,tot};
+}
+function polyAt(pts, info, s){
+  let acc=0;
+  for(let i=0;i<info.seg.length;i++){
+    if (s <= acc + info.seg[i] || i === info.seg.length-1){
+      const u = info.seg[i] ? Math.min(1,(s-acc)/info.seg[i]) : 0;
+      return [pts[i][0]+(pts[i+1][0]-pts[i][0])*u, pts[i][1]+(pts[i+1][1]-pts[i][1])*u];
+    }
+    acc += info.seg[i];
+  }
+  return pts[pts.length-1];
+}
+
+/* 전자 경로: (−)극 표면 → 극판 → 도선 → 전압계 → 도선 → (+)극 표면 */
+function electronPath(start){
+  const a = sim.ci.anode, c = sim.ci.cath;
+  const xa = G.elX[a], xc = G.elX[c];
+  const end = surfacePoint(c, xc < 450 ? 1 : -1);
+  if (Math.random() < .35 && !metalAt(c).she) Object.assign(end, surfacePoint(c, xc < 450 ? -1 : 1));
+  const pts = [[start.x,start.y],[xa,start.y],[xa,G.plateTop],[xa,G.wireY],[G.term[a],G.wireY],[G.term[a],G.termY],
+               [G.term[c],G.termY],[G.term[c],G.wireY],[xc,G.wireY],[xc,G.plateTop],[xc,end.y],[end.x,end.y]];
+  return {pts, end};
+}
+function emitElectron(start, delay){
+  const {pts, end} = electronPath(start);
+  sim.electrons.push({pts, info:polyLen(pts), s:0, delay, end});
+}
+
+/* (−)극: 산화 */
+function anodeEvent(){
+  const a = sim.ci.anode, m = metalAt(a);
+  const f = G.elX[a] < 450 ? 1 : -1;               // 염다리 쪽 면을 조금 더 자주
+  const pt = surfacePoint(a, Math.random() < .65 ? f : -f);
+  if (m.she){
+    sim.h2.push({x:pt.x, y:pt.y, f:pt.f, t:0});
+  } else {
+    const p = mkPart({kind:'cat', side:a, x:pt.x + pt.f*13, y:pt.y, label:m.ion, col:m.ionCol, metal:sideKey(a), kick:1});
+    p.vx = pt.f*55; p.vy = rnd(-10,10);
+    sim.parts.push(p);
+    for (let i=0;i<m.n;i++) emitElectron(pt, i*0.16);
+    sim.erode[a] = Math.min(0.85, sim.erode[a] + 1/90);
+    sim.cnt.ox++;
+  }
+}
+function splitH2(h){
+  const a = sim.ci.anode;
+  for (let i=0;i<2;i++){
+    const p = mkPart({kind:'cat', side:a, x:h.x + h.f*6 + (i?4:-4), y:h.y+4, label:'H⁺', col:METALS.H.ionCol, metal:'H', r:10});
+    p.state = 'path'; p.pv = 55;
+    const bx = G.elX[a] + rnd(-28,28);
+    p.wps = [[bx, 504], [bx + (bx < G.elX[a] ? -50 : 50), 500]];
+    sim.parts.push(p);
+    emitElectron({x:h.x, y:h.y}, i*0.16);
+  }
+  sim.cnt.ox++;
+}
+
+/* 전자 도착 → (+)극 표면에서 대기 */
+function electronArrive(el){
+  sim.surfE.push({x:el.end.x, y:el.end.y, claimed:false});
+  sim.pendingE++; sim.cnt.e++;
+  if (S.show.br || true) spawnBridgeIon();
+}
+function spawnBridgeIon(){
+  const c = sim.ci.cath, a = sim.ci.anode, salt = bridgeSalt();
+  sim.bridgeFlip = !sim.bridgeFlip;
+  const toCath = sim.bridgeFlip;
+  const to = toCath ? c : a;
+  const jx = rnd(-5,5), jy = rnd(-5,5);
+  const pts = bridgeHalf(to).map((p,i,arr) => i===arr.length-1 ? p : [p[0]+jx, p[1]+jy]);
+  pts[0][0] += rnd(-40,40);
+  const p = mkPart({kind: toCath ? 'bK' : 'bA', side: to, x:pts[0][0], y:pts[0][1],
+                    label: toCath ? 'K⁺' : salt.an, col: toCath ? K_COL : ANIONS[salt.an], r:10, state:'path', pv:62});
+  p.wps = pts.slice(1);
+  p.onDone = q => { q.vx = rnd(-30,30); q.vy = 25; q.kick = 1; };
+  sim.parts.push(p);
+  if (toCath) sim.cnt.bc++; else sim.cnt.ba++;
+}
+
+/* (+)극: 환원 */
+function tryReduce(){
+  const c = sim.ci.cath; if (!c) return;
+  const m = metalAt(c), per = m.she ? 1 : m.n;
+  let guard = 0;
+  while (sim.surfE.filter(d=>!d.claimed).length >= per && guard++ < 5){
+    const free = sim.parts.filter(p => p.kind==='cat' && p.side===c && p.state==='free' && p.fade>=0 && p.metal===sideKey(c));
+    if (!free.length) break;
+    const dots = sim.surfE.filter(d=>!d.claimed).slice(0, per);
+    const tgt = dots[0];
+    free.sort((p,q) => Math.hypot(p.x-tgt.x,p.y-tgt.y) - Math.hypot(q.x-tgt.x,q.y-tgt.y));
+    const ion = free[0];
+    dots.forEach(d => d.claimed = true);
+    const f = tgt.x < G.elX[c] ? -1 : 1;
+    ion.state = 'path'; ion.pv = 58;
+    if (m.she){
+      const bx = G.elX[c] + rnd(-22,22);
+      ion.wps = [[ion.x, Math.max(ion.y, 500)], [bx, 503], [tgt.x + f*6, 484], [tgt.x + f*9, tgt.y]];
+    } else {
+      ion.wps = [[tgt.x + f*12, tgt.y]];
+    }
+    ion.dots = dots;
+    ion.onDone = q => reduceArrive(q, c, m);
+  }
+}
+function reduceArrive(ion, c, m){
+  ion.dead = true;
+  ion.dots.forEach(d => { const i = sim.surfE.indexOf(d); if (i>=0) sim.surfE.splice(i,1); });
+  sim.pendingE -= ion.dots.length;
+  sim.cnt.red++;
+  const d0 = ion.dots[0];
+  if (m.she){
+    sim.hRed++;
+    if (sim.hRed % 2 === 0) sim.bubbles.push({x:d0.x, y:d0.y-4, r:5, vy:-38, lab:true, side:c});
+  } else {
+    const f = d0.x < G.elX[c] ? -1 : 1;
+    const dep = sim.deposits[c];
+    dep.push({x:d0.x + f*rnd(0,2.5), y:d0.y + rnd(-2,2), r:rnd(3,4.4)});
+    if (dep.length > 160) dep.splice(0, 1);
+  }
+}
+
+/* =========================================================
+   업데이트
+   ========================================================= */
+function update(dt){
+  sim.t += dt;
+  const ci = sim.ci;
+  const reacting = ci.anode !== null;
+
+  if (reacting){
+    sim.nextEvent -= dt;
+    const inFlight = sim.electrons.length;
+    if (sim.nextEvent <= 0){
+      if (sim.surfE.length < 8 && inFlight < 12) anodeEvent();
+      sim.nextEvent = 1.15 + rnd(0, .5);
+    }
+    tryReduce();
+  }
+
+  // 표준 수소 전극의 H2 기체 공급(장식 기포)
+  ['L','R'].forEach(side => {
+    if (!metalAt(side).she) return;
+    if (Math.random() < dt*1.6) sim.bubbles.push({x:G.elX[side]+rnd(-14,14), y:rnd(440,470), r:rnd(2,3.4), vy:-rnd(25,40), side});
+  });
+
+  // H2 → 2H+ 분리
+  sim.h2.forEach(h => { h.t += dt; if (h.t > 0.7 && !h.done){ h.done = true; splitH2(h); } });
+  sim.h2 = sim.h2.filter(h => !h.done);
+
+  // 전자
+  sim.electrons.forEach(e => {
+    if (e.delay > 0){ e.delay -= dt; return; }
+    e.s += 190*dt;
+    if (e.s >= e.info.tot){ e.done = true; electronArrive(e); }
+  });
+  sim.electrons = sim.electrons.filter(e => !e.done);
+
+  // 입자
+  sim.parts.forEach(p => {
+    if (p.fade === 1){ p.alpha = Math.min(1, p.alpha + dt*1.2); if (p.alpha >= 1) p.fade = 0; }
+    if (p.fade === -1){ p.alpha -= dt*0.8; if (p.alpha <= 0) p.dead = true; }
+    if (p.state === 'path'){
+      const [tx,ty] = p.wps[0];
+      const dx = tx-p.x, dy = ty-p.y, d = Math.hypot(dx,dy), v = p.pv;
+      if (d < v*dt + .5){
+        p.x = tx; p.y = ty; p.wps.shift();
+        if (!p.wps.length){ p.state = 'free'; const cb = p.onDone; p.onDone = null; if (cb) cb(p); }
+      } else { p.x += dx/d*v*dt; p.y += dy/d*v*dt; }
+      return;
+    }
+    // 자유 운동(브라운 운동)
+    p.vx += rnd(-1,1)*95*dt; p.vy += rnd(-1,1)*95*dt;
+    const damp = Math.pow(p.kick ? 0.55 : 0.35, dt);
+    p.vx *= damp; p.vy *= damp;
+    const sp = Math.hypot(p.vx,p.vy), mx = p.kick ? 60 : 26;
+    if (sp > mx){ p.vx *= mx/sp; p.vy *= mx/sp; }
+    if (p.kick && sp < 22) p.kick = 0;
+    p.x += p.vx*dt; p.y += p.vy*dt;
+    const R = region(p.side);
+    if (p.x < R.x0){ p.x = R.x0; p.vx = Math.abs(p.vx); }
+    if (p.x > R.x1){ p.x = R.x1; p.vx = -Math.abs(p.vx); }
+    if (p.y < R.y0){ p.y = R.y0; p.vy = Math.abs(p.vy); }
+    if (p.y > R.y1){ p.y = R.y1; p.vy = -Math.abs(p.vy); }
+    obstacles(p.side).forEach(o => {
+      const m = p.r*0.7;
+      if (p.x > o[0]-m && p.x < o[1]+m && p.y < o[3]+m){
+        if (p.x - o[0] < o[1] - p.x){ p.x = o[0]-m; p.vx = -Math.abs(p.vx); }
+        else { p.x = o[1]+m; p.vx = Math.abs(p.vx); }
+      }
+    });
+  });
+  sim.parts = sim.parts.filter(p => !p.dead);
+
+  // 화면 속 입자 수 관리(모형이므로 일부만 표시)
+  if (reacting){
+    const a = ci.anode, c = ci.cath;
+    const aCats = sim.parts.filter(p => p.kind==='cat' && p.side===a && p.state==='free' && p.fade===0);
+    if (aCats.length > 22) aCats.sort((p,q)=>p.born-q.born)[0].fade = -1;
+    const cCats = sim.parts.filter(p => p.kind==='cat' && p.side===c && p.fade>=0 && p.metal===sideKey(c));
+    if (cCats.length < 6){
+      const reserved = cCats.filter(p=>p.state==='path').length;
+      if (cCats.length - reserved < 4) addCat(c, null, true);
+    }
+    ['L','R'].forEach(s => {
+      const b = sim.parts.filter(p => (p.kind==='bK'||p.kind==='bA') && p.side===s && p.state==='free' && p.fade===0);
+      if (b.length > 8) b.sort((p,q)=>p.born-q.born)[0].fade = -1;
+    });
+  }
+
+  // 기포
+  sim.bubbles.forEach(b => { b.y += b.vy*dt; b.x += Math.sin(sim.t*6 + b.y*.1)*0.25; if (b.y < G.liqTop + 4) b.dead = true; });
+  sim.bubbles = sim.bubbles.filter(b => !b.dead);
+}
+
+/* =========================================================
+   그리기
+   ========================================================= */
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function shade(hex, k){
+  const n = parseInt(hex.slice(1),16); let r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  const f = v => Math.max(0, Math.min(255, Math.round(k<0 ? v*(1+k) : v+(255-v)*k)));
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+const KFONT = '"Nanum Gothic","Malgun Gothic",sans-serif';
+const CFONT = '"STIX Two Text",Georgia,serif';
+
+function liquidColor(side){
+  const m = metalAt(side);
+  let base = [196,226,242], a = 0.55;
+  if (m.tint){
+    const n = sim.parts.filter(p => p.kind==='cat' && p.side===side && p.metal===sideKey(side) && !p.dead).length;
+    const f = Math.max(0, Math.min(1.4, n/14)) * 0.55;
+    base = base.map((v,i) => Math.round(v + (m.tint[i]-v)*f));
+    a = 0.55 + f*0.25;
+  }
+  return `rgba(${base[0]},${base[1]},${base[2]},${a})`;
+}
+
+function drawBeakerBack(side){
+  const [x0,x1] = G.beaker[side], top = G.rimTop, bot = G.bBot;
+  // 유리 내부
+  ctx.fillStyle = 'rgba(230,240,248,.35)';
+  rr(x0, top, x1-x0, bot-top, 22); ctx.fill();
+  // 용액
+  ctx.save();
+  rr(x0+3, G.liqTop, x1-x0-6, bot-G.liqTop-3, 20); ctx.clip();
+  ctx.fillStyle = liquidColor(side);
+  ctx.fillRect(x0, G.liqTop, x1-x0, bot-G.liqTop);
+  const g = ctx.createLinearGradient(0, G.liqTop, 0, bot);
+  g.addColorStop(0,'rgba(255,255,255,.35)'); g.addColorStop(.25,'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(x0, G.liqTop, x1-x0, bot-G.liqTop);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(110,160,195,.7)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x0+3, G.liqTop); ctx.lineTo(x1-3, G.liqTop); ctx.stroke();
+}
+function drawBeakerFront(side){
+  const [x0,x1] = G.beaker[side], top = G.rimTop, bot = G.bBot;
+  ctx.strokeStyle = 'rgba(105,125,148,.85)'; ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(x0-9, top-5); ctx.quadraticCurveTo(x0, top-2, x0, top+12);
+  ctx.lineTo(x0, bot-22); ctx.quadraticCurveTo(x0, bot, x0+22, bot);
+  ctx.lineTo(x1-22, bot); ctx.quadraticCurveTo(x1, bot, x1, bot-22);
+  ctx.lineTo(x1, top+12); ctx.quadraticCurveTo(x1, top-2, x1+9, top-5);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x0+9, top+24); ctx.lineTo(x0+9, bot-30); ctx.stroke();
+}
+
+function drawBridge(){
+  const path = () => { ctx.beginPath(); ctx.moveTo(300,G.legBot); ctx.lineTo(300,265); ctx.arcTo(300,215,350,215,50); ctx.lineTo(550,215); ctx.arcTo(600,215,600,265,50); ctx.lineTo(600,G.legBot); };
+  ctx.lineCap = 'butt';
+  path(); ctx.strokeStyle = '#8f99a4'; ctx.lineWidth = 42; ctx.stroke();
+  path(); ctx.strokeStyle = '#c9cfd6'; ctx.lineWidth = 38; ctx.stroke();
+  ctx.save(); ctx.translate(-7,-7); path(); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 10; ctx.stroke(); ctx.restore();
+  // 다리 끝 단면
+  ['L','R'].forEach(s => { const x = G.legX[s]; ctx.fillStyle = '#aeb6bf'; ctx.beginPath(); ctx.ellipse(x, G.legBot, 19, 4, 0, 0, 6.29); ctx.fill(); });
+}
+function drawBridgeIons(){
+  if (!S.show.br) return;
+  const salt = bridgeSalt();
+  const info = polyLen(sim.decorPath);
+  sim.decor.forEach(d => {
+    const [x,y] = polyAt(sim.decorPath, info, d.t*info.tot);
+    const jx = Math.sin(sim.t*2 + d.ph)*3, jy = Math.cos(sim.t*1.7 + d.ph)*3;
+    const isK = d.k === 'K';
+    drawIon(x+jx, y+jy, 7, isK ? K_COL : ANIONS[salt.an], isK ? '+' : '−', 0.55, false);
+  });
+}
+
+function drawElectrode(side){
+  const m = metalAt(side), ex = G.elX[side];
+  if (m.she){ drawSHE(side); return; }
+  const w = G.plateW, top = G.plateTop, lt = G.liqTop, bot = G.plateBot;
+  const g = ctx.createLinearGradient(ex-w/2, 0, ex+w/2, 0);
+  g.addColorStop(0, shade(m.plate, .25)); g.addColorStop(.55, m.plate); g.addColorStop(1, shade(m.plate, -.22));
+  ctx.fillStyle = g; ctx.strokeStyle = shade(m.plate, -.35); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.rect(ex-w/2, top, w, lt-top+1); ctx.fill(); ctx.stroke();
+  // 잠긴 부분 (산화되면 깎임)
+  const e = sim.ci.anode === side ? sim.erode[side] : 0;
+  ctx.beginPath();
+  const N = 24, nz = sim.noise;
+  const yb = bot - e*30;
+  ctx.moveTo(ex-w/2, lt);
+  for (let i=0;i<=N;i++){ const y = lt + (yb-lt)*i/N; const d = i===0 ? 0 : e*(7 + 7*nz[i])*Math.min(1, i/3); ctx.lineTo(ex-w/2 + d, y); }
+  for (let i=N;i>=0;i--){ const y = lt + (yb-lt)*i/N; const d = i===0 ? 0 : e*(7 + 7*nz[i+30])*Math.min(1, i/3); ctx.lineTo(ex+w/2 - d, y); }
+  ctx.closePath();
+  ctx.globalAlpha = .92; ctx.fillStyle = g; ctx.fill(); ctx.globalAlpha = 1; ctx.stroke();
+  // 석출된 금속
+  if (sim.ci.cath === side){
+    sim.deposits[side].forEach(d => {
+      ctx.fillStyle = shade(m.plate, -.12); ctx.strokeStyle = shade(m.plate, -.38); ctx.lineWidth = .8;
+      ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 6.29); ctx.fill(); ctx.stroke();
+    });
+  }
+}
+function drawSHE(side){
+  const ex = G.elX[side], out = ex < 450 ? -1 : 1;
+  // 유리관
+  ctx.fillStyle = 'rgba(205,225,240,.45)'; ctx.strokeStyle = 'rgba(105,140,170,.8)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(ex-34, 495); ctx.lineTo(ex-34, 235); ctx.quadraticCurveTo(ex-34, 200, ex, 196);
+  ctx.quadraticCurveTo(ex+34, 200, ex+34, 235); ctx.lineTo(ex+34, 495); ctx.fill(); ctx.stroke();
+  // H2 주입관
+  ctx.strokeStyle = 'rgba(120,140,160,.85)'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(ex+out*34, 228); ctx.lineTo(ex+out*58, 228); ctx.quadraticCurveTo(ex+out*70, 228, ex+out*70, 214); ctx.lineTo(ex+out*70, 196); ctx.stroke();
+  ctx.strokeStyle = 'rgba(235,242,248,1)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(ex+out*34, 228); ctx.lineTo(ex+out*58, 228); ctx.quadraticCurveTo(ex+out*70, 228, ex+out*70, 214); ctx.lineTo(ex+out*70, 196); ctx.stroke();
+  ctx.lineCap = 'butt';
+  drawArrow(ex+out*70, 182, ex+out*70, 199, '#dc2626', 2);
+  ctx.fillStyle = '#334155'; ctx.font = `600 14px ${CFONT}`; ctx.textAlign = out>0 ? 'left' : 'right';
+  ctx.fillText('H₂(g) 1 atm', ex+out*78, 216);
+  // 백금선과 백금판
+  ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(ex, G.plateTop); ctx.lineTo(ex, 447); ctx.stroke();
+  const g = ctx.createLinearGradient(ex-18,0,ex+18,0); g.addColorStop(0,'#f8fafc'); g.addColorStop(1,'#c7cdd4');
+  ctx.fillStyle = g; ctx.strokeStyle = '#8b939c'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.rect(ex-18, 446, 36, 34); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#6b7280'; ctx.font = `700 11px ${KFONT}`; ctx.textAlign = 'center';
+  ctx.fillText('Pt', ex, 467);
+}
+
+function drawIon(x, y, r, col, label, alpha, big){
+  ctx.globalAlpha = alpha;
+  const g = ctx.createRadialGradient(x-r*.35, y-r*.35, r*.15, x, y, r);
+  g.addColorStop(0, shade(col, .45)); g.addColorStop(1, col);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.29); ctx.fill();
+  ctx.strokeStyle = shade(col, -.3); ctx.lineWidth = 1; ctx.stroke();
+  if (label){
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const len = label.length;
+    ctx.font = `700 ${big ? (len>4 ? 8.5 : len>3 ? 9.5 : 11) : 9}px ${CFONT}`;
+    ctx.fillText(label, x, y+.5);
+    ctx.textBaseline = 'alphabetic';
+  }
+  ctx.globalAlpha = 1;
+}
+function chargeOf(label){
+  const m = label.match(/[²³]?[⁺⁻]$/); if (!m) return '';
+  return m[0].replace('²','2').replace('³','3').replace('⁺','+').replace('⁻','−');
+}
+
+function drawParts(){
+  sim.parts.forEach(p => {
+    if (p.kind === 'an' && !S.show.sp) return;
+    if ((p.kind === 'bK' || p.kind === 'bA') && !S.show.br) return;
+    const lab = S.show.lab ? p.label : chargeOf(p.label);
+    drawIon(p.x, p.y, p.r, p.col, lab, p.alpha * (p.kind==='an' ? .85 : 1), S.show.lab);
+  });
+  // H2 분자(산화 직전)
+  sim.h2.forEach(h => {
+    const a = Math.min(1, h.t/0.3);
+    ctx.globalAlpha = a;
+    ['#f1f5f9','#e2e8f0'].forEach((c,i) => { ctx.fillStyle = c; ctx.strokeStyle = '#94a3b8'; ctx.beginPath(); ctx.arc(h.x + h.f*8 + (i?5:-5), h.y, 6.5, 0, 6.29); ctx.fill(); ctx.stroke(); });
+    if (S.show.lab){ ctx.fillStyle = '#334155'; ctx.font = `700 10px ${CFONT}`; ctx.textAlign = 'center'; ctx.fillText('H₂', h.x + h.f*8, h.y - 10); }
+    ctx.globalAlpha = 1;
+  });
+  // 기포
+  sim.bubbles.forEach(b => {
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.strokeStyle = 'rgba(100,150,190,.8)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 6.29); ctx.fill(); ctx.stroke();
+    if (b.lab && S.show.lab){ ctx.fillStyle = '#1e3a5f'; ctx.font = `700 9px ${CFONT}`; ctx.textAlign = 'center'; ctx.fillText('H₂', b.x, b.y - 8); }
+  });
+}
+
+function drawElectronDot(x, y){
+  ctx.fillStyle = 'rgba(250,204,21,.28)'; ctx.beginPath(); ctx.arc(x, y, 8, 0, 6.29); ctx.fill();
+  ctx.fillStyle = E_COL; ctx.strokeStyle = '#a16207'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(x, y, 4.6, 0, 6.29); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#713f12'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x-2.2, y); ctx.lineTo(x+2.2, y); ctx.stroke();
+}
+function drawElectrons(){
+  if (!S.show.e) return;
+  sim.electrons.forEach(e => { if (e.delay > 0) return; const [x,y] = polyAt(e.pts, e.info, e.s); drawElectronDot(x, y); });
+  sim.surfE.forEach(d => drawElectronDot(d.x, d.y));
+}
+
+function drawWires(){
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = '#1f2937';
+  ['L','R'].forEach(s => {
+    const x = G.elX[s], t = G.term[s];
+    ctx.beginPath(); ctx.moveTo(x, G.plateTop+4); ctx.lineTo(x, G.wireY+10); ctx.quadraticCurveTo(x, G.wireY, x + (t>x?10:-10), G.wireY);
+    ctx.lineTo(t, G.wireY); ctx.lineTo(t, G.termY); ctx.stroke();
+    // 집게
+    const col = s === 'L' ? '#111827' : '#dc2626';
+    ctx.fillStyle = col; rr(x-5, G.plateTop-16, 10, 22, 3); ctx.fill();
+    ctx.fillStyle = s === 'L' ? '#111827' : '#b91c1c'; rr(t + (s==='L'?-26:6), G.wireY-5, 20, 10, 4); ctx.fill();
+  });
+}
+function drawVoltmeter(){
+  const x = 390, y = 16, w = 120, h = 126;
+  ctx.fillStyle = '#e9b308'; rr(x, y, w, h, 14); ctx.fill();
+  ctx.strokeStyle = '#a77f05'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#272b33'; rr(x+8, y+8, w-16, h-16, 9); ctx.fill();
+  ctx.fillStyle = '#c3d1ad'; rr(x+16, y+16, w-32, 34, 4); ctx.fill();
+  const v = sim.ci.reading;
+  ctx.fillStyle = '#1d2a14'; ctx.textAlign = 'right'; ctx.font = `700 25px "Courier New",monospace`;
+  ctx.fillText(S.show.hide ? '?.??' : (v < 0 ? '-' : '') + Math.abs(v).toFixed(2), x+w-22, y+42);
+  ctx.fillStyle = '#3f4a32'; ctx.font = `700 10px ${KFONT}`; ctx.fillText('V', x+w-17, y+46);
+  // 다이얼
+  ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(x+w/2, y+80, 16, 0, 6.29); ctx.fill();
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x+w/2, y+68); ctx.lineTo(x+w/2, y+92); ctx.stroke();
+  // 단자
+  ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(G.term.L, G.termY, 5, 0, 6.29); ctx.fill();
+  ctx.fillStyle = '#dc2626'; ctx.beginPath(); ctx.arc(G.term.R, G.termY, 5, 0, 6.29); ctx.fill();
+  ctx.fillStyle = '#cbd5e1'; ctx.font = `700 8px ${KFONT}`; ctx.textAlign = 'center';
+  ctx.fillText('COM', G.term.L, G.termY-9); ctx.fillText('V', G.term.R, G.termY-9);
+}
+
+function drawArrow(x1, y1, x2, y2, col, lw){
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw || 3;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const a = Math.atan2(y2-y1, x2-x1), L = 9;
+  ctx.beginPath(); ctx.moveTo(x2 + Math.cos(a)*2, y2 + Math.sin(a)*2);
+  ctx.lineTo(x2 - L*Math.cos(a-0.45), y2 - L*Math.sin(a-0.45));
+  ctx.lineTo(x2 - L*Math.cos(a+0.45), y2 - L*Math.sin(a+0.45)); ctx.closePath(); ctx.fill();
+}
+function haloText(t, x, y, col){
+  ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(t, x, y);
+  ctx.fillStyle = col; ctx.fillText(t, x, y);
+}
+
+function drawLabels(){
+  const ci = sim.ci, salt = bridgeSalt();
+  // 표준 상태
+  ctx.textAlign = 'left'; ctx.font = `700 12px ${KFONT}`; ctx.fillStyle = '#64748b';
+  ctx.fillText('25 °C · 1 M · 1 atm', 16, 24);
+  ctx.font = `400 11px ${KFONT}`; ctx.fillText('※ 입자 수는 실제 비율이 아닌 모형', 16, 40);
+
+  // 전자 이동 방향
+  if (ci.anode){
+    const dir = ci.anode === 'L' ? 1 : -1;
+    [[250],[650]].forEach(([cx]) => {
+      drawArrow(cx - dir*38, 132, cx + dir*38, 132, '#0891b2', 3);
+      ctx.font = `italic 600 17px ${CFONT}`; ctx.fillStyle = '#0e7490'; ctx.textAlign = 'center';
+      ctx.fillText('e⁻', cx, 120);
+    });
+  }
+
+  // 극 표시
+  ['L','R'].forEach(s => {
+    const m = metalAt(s), ex = G.elX[s], out = ex < 450 ? -1 : 1;
+    const isA = ci.anode === s, isC = ci.cath === s;
+    ctx.textAlign = out < 0 ? 'right' : 'left';
+    const px = ex + out*(m.she ? 44 : 28);
+    if (isA || isC){
+      ctx.font = `800 17px ${KFONT}`;
+      haloText(isA ? '(−)극' : '(+)극', px, 172, isA ? OX_COL : RD_COL);
+      ctx.font = `700 12px ${KFONT}`;
+      haloText(isA ? '산화' : '환원', px, 188, isA ? OX_COL : RD_COL);
+    }
+    ctx.font = `700 14px ${KFONT}`;
+    const nm = m.she ? '표준 수소 전극' : `${m.name}판`;
+    const ny = m.she ? 244 : 292;
+    haloText(nm, ex + out*(m.she ? 44 : 28), ny, '#1f2937');
+    if (!m.she){ ctx.font = `600 14px ${CFONT}`; haloText(`(${m.sym})`, ex + out*28, ny+17, '#475569'); }
+    // 용액 이름
+    const [x0,x1] = G.beaker[s];
+    ctx.textAlign = 'center'; ctx.font = `700 13px ${KFONT}`; ctx.fillStyle = '#334155';
+    const sol = m.she ? '1 M H⁺ 수용액 (HCl)' : `1 M ${m.salt} 수용액`;
+    ctx.fillText(sol, (x0+x1)/2, 545);
+    // 반쪽 반응식
+    ctx.font = `600 16px ${CFONT}`;
+    const eS = n => (n>1 ? n : '') + 'e⁻';
+    let txt, col = '#64748b';
+    if (isA){ txt = m.she ? 'H₂ → 2H⁺ + 2e⁻' : `${m.sym} → ${m.ion} + ${eS(m.n)}`; col = OX_COL; }
+    else if (isC){ txt = m.she ? '2H⁺ + 2e⁻ → H₂' : `${m.ion} + ${eS(m.n)} → ${m.sym}`; col = RD_COL; }
+    else { txt = m.she ? '2H⁺ + 2e⁻ ⇌ H₂' : `${m.ion} + ${eS(m.n)} ⇌ ${m.sym}`; }
+    ctx.fillStyle = col; ctx.fillText(txt, (x0+x1)/2, 572);
+    ctx.font = `italic 14px ${CFONT}`; ctx.fillStyle = '#475569';
+    ctx.fillText(`E° = ${fmtE(m.E)} V`, (x0+x1)/2, 592);
+  });
+
+  // 염다리
+  ctx.textAlign = 'center'; ctx.font = `700 13px ${KFONT}`;
+  haloText(`염다리 (${salt.name})`, 450, 262, '#334155');
+  if (ci.anode && S.show.br){
+    const c = ci.cath, toR = c === 'R';
+    // 양이온 → (+)극 쪽
+    ctx.save(); ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2.4;
+    const s = toR ? 1 : -1;
+    ctx.beginPath(); ctx.moveTo(450 + s*72, 202); ctx.quadraticCurveTo(450 + s*142, 198, 450 + s*164, 248); ctx.stroke();
+    drawArrow(450 + s*161, 240, 450 + s*165, 252, '#dc2626', 2.4);
+    ctx.beginPath(); ctx.moveTo(450 - s*72, 202); ctx.quadraticCurveTo(450 - s*142, 198, 450 - s*164, 248); ctx.stroke();
+    drawArrow(450 - s*161, 240, 450 - s*165, 252, '#dc2626', 2.4);
+    ctx.restore();
+    ctx.font = `700 15px ${CFONT}`;
+    haloText('K⁺', 450 + s*60, 192, '#b45309');
+    haloText(salt.an, 450 - s*60, 192, ANIONS[salt.an]);
+  }
+
+  if (!ci.anode){
+    ctx.fillStyle = 'rgba(255,255,255,.88)'; rr(255, 282, 390, 40, 12); ctx.fill();
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#334155'; ctx.font = `700 14px ${KFONT}`; ctx.textAlign = 'center';
+    ctx.fillText('두 반쪽 전지가 같아 전위차 0 V → 전자가 흐르지 않아요', 450, 307);
+  }
+}
+
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,W,H);
+  drawBeakerBack('L'); drawBeakerBack('R');
+  drawBridge(); drawBridgeIons();
+  drawElectrode('L'); drawElectrode('R');
+  drawParts();
+  drawBeakerFront('L'); drawBeakerFront('R');
+  drawWires();
+  drawElectrons();
+  drawVoltmeter();
+  drawLabels();
+}
+
+/* =========================================================
+   패널
+   ========================================================= */
+const eH = n => (n>1 ? n : '') + 'e<sup>−</sup>';
+const cf = k => k === 1 ? '' : k;
+function oxHTML(m){ return m.she ? 'H<sub>2</sub>(<i>g</i>) → 2H<sup>+</sup>(<i>aq</i>) + 2e<sup>−</sup>' : `${m.sym}(<i>s</i>) → ${m.ionH}(<i>aq</i>) + ${eH(m.n)}`; }
+function rdHTML(m){ return m.she ? '2H<sup>+</sup>(<i>aq</i>) + 2e<sup>−</sup> → H<sub>2</sub>(<i>g</i>)' : `${m.ionH}(<i>aq</i>) + ${eH(m.n)} → ${m.sym}(<i>s</i>)`; }
+function totalHTML(A, C){
+  const L = lcm(A.n, C.n), ka = L/A.n, kc = L/C.n;
+  const aR = A.she ? `${cf(ka)}H<sub>2</sub>(<i>g</i>)` : `${cf(ka)}${A.sym}(<i>s</i>)`;
+  const aO = A.she ? `${2*ka}H<sup>+</sup>(<i>aq</i>)` : `${cf(ka)}${A.ionH}(<i>aq</i>)`;
+  const cO = C.she ? `${2*kc}H<sup>+</sup>(<i>aq</i>)` : `${cf(kc)}${C.ionH}(<i>aq</i>)`;
+  const cR = C.she ? `${cf(kc)}H<sub>2</sub>(<i>g</i>)` : `${cf(kc)}${C.sym}(<i>s</i>)`;
+  return {html:`${aR} + ${cO} → ${aO} + ${cR}`, L, ka, kc};
+}
+const hv = (s) => S.show.hide ? `<span class="hidden-val" title="클릭하면 보여요" onclick="this.classList.remove('hidden-val')">${s}</span>` : s;
+
+function updatePanel(){
+  const ci = sim.ci, calc = $('calc');
+  let h = '';
+  if (S.mode === 1){
+    const m = METALS[S.m1], sheA = ci.anode && metalAt(ci.anode).she;
+    h += `<div class="she-box"><b>표준 수소 전극(E° = 0.00 V)을 기준</b>으로 ${m.name} 반쪽 전지의 전위를 측정해요.<br>
+      전압계: <b>${hv(ci.ecell.toFixed(2) + ' V')}</b> · 수소 전극이 <b>${sheA ? '(−)극' : '(+)극'}</b><br>
+      → ${m.name}은 <b>${sheA ? '(+)극(환원)' : '(−)극(산화)'}</b>이므로
+      <span class="chemi">E°(${m.ionH}/${m.sym}) = ${hv(fmtE(m.E) + ' V')}</span></div>`;
+  }
+  if (ci.anode){
+    const A = metalAt(ci.anode), C = metalAt(ci.cath), T = totalHTML(A, C);
+    h += `<div class="eq ox"><span class="tag">(−)극 · 산화</span>${oxHTML(A)}</div>
+          <div class="eq rd"><span class="tag">(+)극 · 환원</span>${rdHTML(C)}</div>
+          <div class="eq tot"><span class="tag">전체</span>${T.html}</div>
+          <div class="ecell">E°<sub>전지</sub> = E°<sub>(+)극</sub> − E°<sub>(−)극</sub><br>
+            <span class="k">=</span> (${fmtE(C.E)}) − (${fmtE(A.E)}) = <b>${hv(fmtE(ci.ecell) + ' V')}</b></div>`;
+    if (A.n !== C.n || (A.she !== C.she)){
+      const mul = [];
+      if (T.ka > 1) mul.push(`(−)극 반응 ×${T.ka}`);
+      if (T.kc > 1) mul.push(`(+)극 반응 ×${T.kc}`);
+      if (mul.length) h += `<div class="note">전자 수를 맞추려고 <b>${mul.join(', ')}</b>를 했지만, <b>E°는 곱하지 않아요.</b> 표준 환원 전위는 물질의 양과 관계없는 세기 성질이에요.</div>`;
+    }
+    h += `<div class="note" style="background:#f2f7ff;border-color:#cfe0fb;color:#1e3a6b">산화 반응식으로 뒤집어 써도 E°의 부호를 바꾸지 않고, <b>환원 전위끼리 (+)극 − (−)극</b>으로 빼요. E°가 더 큰 쪽이 (+)극이에요.</div>`;
+    if (S.mode === 2 && ci.reading < 0) h += `<div class="note">전압계의 빨간 단자(V)를 오른쪽에 연결했는데 값이 <b>음수</b>예요 → 실제 (+)극은 <b>왼쪽</b>이에요.</div>`;
+  } else {
+    h += `<div class="ecell">E°<sub>전지</sub> = (${fmtE(ci.L.E)}) − (${fmtE(ci.R.E)}) = <b>${hv('0.00 V')}</b></div>
+          <div class="note">같은 반쪽 전지 두 개를 연결하면 전위차가 없어 반응이 일어나지 않아요.</div>`;
+  }
+  calc.innerHTML = h;
+  buildLadder();
+  buildObs();
+  buildLegend();
+  updateCounts(true);
+}
+
+let lastCountKey = '';
+function updateCounts(force){
+  const ci = sim.ci, el = $('count');
+  if (!ci.anode){ el.innerHTML = '<div style="color:var(--sub);font-size:14px">반응이 일어나지 않아요.</div>'; return; }
+  const A = metalAt(ci.anode), C = metalAt(ci.cath), T = totalHTML(A, C), c = sim.cnt, salt = bridgeSalt();
+  const key = [c.ox,c.e,c.red,c.bc,c.ba,S.mode,S.left,S.right].join();
+  if (!force && key === lastCountKey) return; lastCountKey = key;
+  const aLab = A.she ? 'H<sub>2</sub> 분자' : `${A.sym} 원자`;
+  const cLab = C.she ? 'H<sup>+</sup> 이온' : `${C.ionH} 이온`;
+  const rA = T.ka, rE = T.L, rC = C.she ? 2*T.kc : T.kc;
+  el.innerHTML = `<div class="counts">
+      <div class="cnt a"><div class="v">${c.ox}</div><div class="l">산화된<br>${aLab}</div></div>
+      <div class="cnt e"><div class="v">${c.e}</div><div class="l">도선으로<br>이동한 e<sup>−</sup></div></div>
+      <div class="cnt c"><div class="v">${c.red}</div><div class="l">환원된<br>${cLab}</div></div></div>
+    <div class="ratio">${aLab} : e<sup>−</sup> : ${cLab} = <span>${rA} : ${rE} : ${rC}</span> (반응식 계수비)</div>
+    <div class="bridgecnt">염다리 → (+)극 쪽 K<sup>+</sup> <b>${c.bc}</b>개 · (−)극 쪽 ${ANION_H[salt.an]} <b>${c.ba}</b>개</div>`;
+}
+
+function buildLadder(){
+  const ci = sim.ci;
+  const keys = Object.keys(METALS).sort((a,b) => METALS[b].E - METALS[a].E);
+  const top = 34, span = 300, Emax = 1.0, Emin = -2.5;
+  const yOf = E => top + (Emax - E)/(Emax - Emin)*span;
+  let prev = -99; const rows = [];
+  keys.forEach(k => { const y0 = yOf(METALS[k].E); let y = Math.max(y0, prev + 17); rows.push({k, y0, y}); prev = y; });
+  const Hh = Math.max(top+span, prev) + 30;
+  const aK = ci.anode ? sideKey(ci.anode) : null, cK = ci.cath ? sideKey(ci.cath) : null;
+  let s = `<svg viewBox="0 0 330 ${Hh}" width="100%" style="display:block;font-family:'Nanum Gothic',sans-serif">
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#93c5fd"/><stop offset="1" stop-color="#fda4af"/></linearGradient></defs>
+    <text x="96" y="16" font-size="11.5" fill="#2563eb" font-weight="700">▲ 환원되기 쉬움 (이온이 전자를 잘 얻음)</text>
+    <rect x="92" y="${top}" width="9" height="${span}" rx="4" fill="url(#lg)"/>`;
+  [1,0,-1,-2].forEach(E => { const y = yOf(E); s += `<line x1="86" x2="92" y1="${y}" y2="${y}" stroke="#94a3b8"/><text x="83" y="${y+4}" font-size="10.5" text-anchor="end" fill="#64748b">${E>0?'+':E<0?'−':''}${Math.abs(E).toFixed(1)}</text>`; });
+  rows.forEach(r => {
+    const m = METALS[r.k], isA = r.k === aK, isC = r.k === cK;
+    const col = isA ? OX_COL : isC ? RD_COL : '#475569';
+    if (isA || isC) s += `<rect x="116" y="${r.y-11}" width="210" height="18" rx="6" fill="${isA ? '#fde8ee' : '#e6efff'}"/>`;
+    s += `<circle cx="96.5" cy="${r.y0}" r="${isA||isC?4.5:3}" fill="${col}"/>
+          <polyline points="101,${r.y0} 112,${r.y0} 118,${r.y}" fill="none" stroke="${isA||isC?col:'#cbd5e1'}"/>
+          <text x="122" y="${r.y+4}" font-size="13" fill="${col}" font-weight="${isA||isC?800:400}" font-family="'STIX Two Text',Georgia,serif">${m.she ? '2H⁺ + 2e⁻ → H₂' : `${m.ion} + ${m.n>1?m.n:''}e⁻ → ${m.sym}`}</text>
+          <text x="322" y="${r.y+4}" font-size="13" text-anchor="end" fill="${col}" font-weight="${isA||isC?800:400}" font-family="'STIX Two Text',Georgia,serif">${fmtE(m.E)}</text>`;
+  });
+  if (aK && cK){
+    const yA = yOf(METALS[aK].E), yC = yOf(METALS[cK].E), mid = (yA+yC)/2;
+    s += `<line x1="58" x2="58" y1="${yA}" y2="${yC+6}" stroke="#0f172a" stroke-width="2"/>
+          <path d="M53,${yC+9} L58,${yC} L63,${yC+9}Z" fill="#0f172a"/>
+          <line x1="54" x2="62" y1="${yA}" y2="${yA}" stroke="#0f172a" stroke-width="2"/>
+          <text transform="translate(44 ${mid}) rotate(-90)" text-anchor="middle" font-size="12" font-weight="800" fill="#0f172a">E°전지 = ${S.show.hide ? '?' : ci.ecell.toFixed(2)} V</text>`;
+  }
+  s += `<text x="96" y="${Hh-6}" font-size="11.5" fill="#e11d48" font-weight="700">▼ 산화되기 쉬움 (금속이 전자를 잘 내놓음)</text></svg>`;
+  $('ladder').innerHTML = s;
+}
+
+function buildObs(){
+  const ci = sim.ci, ul = $('obs');
+  if (!ci.anode){ ul.innerHTML = '<li>두 전극의 E°가 같으면 전자가 이동하려는 경향의 차이가 없어요.</li>'; return; }
+  const A = metalAt(ci.anode), C = metalAt(ci.cath), salt = bridgeSalt();
+  const li = [];
+  li.push(A.she
+    ? `<b style="color:${OX_COL}">(−)극</b>: <span class="chemi">H<sub>2</sub></span> 분자가 백금 표면에서 전자 2개를 내놓고 <span class="chemi">H<sup>+</sup></span> 2개가 돼요.`
+    : `<b style="color:${OX_COL}">(−)극</b>: <span class="chemi">${A.sym}</span> 원자가 전자 ${A.n}개를 극판에 남기고 <span class="chemi">${A.ionH}</span>이 되어 용액으로 녹아 나가요 → 극판 질량 감소`);
+  li.push(C.she
+    ? `<b style="color:${RD_COL}">(+)극</b>: <span class="chemi">H<sup>+</sup></span>이 백금판 표면에서 전자를 얻어 <span class="chemi">H<sub>2</sub></span> 기체가 발생해요.`
+    : `<b style="color:${RD_COL}">(+)극</b>: <span class="chemi">${C.ionH}</span>이 극판 표면에서 전자 ${C.n}개를 얻어 <span class="chemi">${C.sym}</span>으로 석출돼요 → 극판 질량 증가`);
+  li.push(`<b>전자</b>는 <b>도선</b>을 따라 (−)극 → (+)극으로만 이동해요. 용액과 염다리 속으로는 전자가 이동하지 않아요.`);
+  li.push(`<b>염다리</b>: <span class="chemi">K<sup>+</sup></span>은 (+)극 쪽, <span class="chemi">${ANION_H[salt.an]}</span>은 (−)극 쪽으로 이동해 두 용액의 전하 균형을 맞춰요.`);
+  if (C.tint) li.push(`(+)극 용액의 <span class="chemi">${C.ionH}</span> 수가 줄어 용액 색이 점점 옅어져요.`);
+  if (A.tint) li.push(`(−)극 용액에 <span class="chemi">${A.ionH}</span>이 늘어 용액 색이 진해져요.`);
+  if (salt.name === 'KNO₃') li.push(`<span class="chemi">Ag<sup>+</sup></span>, <span class="chemi">Pb<sup>2+</sup></span>은 <span class="chemi">Cl<sup>−</sup></span>과 앙금을 만들기 때문에 염다리에 KNO<sub>3</sub>을 사용했어요.`);
+  li.push(`구경꾼 이온(<span class="chemi">${ANION_H[A.anion]}</span>${A.anion!==C.anion ? `, <span class="chemi">${ANION_H[C.anion]}</span>` : ''})은 반응에 참여하지 않아요.`);
+  ul.innerHTML = li.map(x => `<li>${x}</li>`).join('');
+}
+
+function buildLegend(){
+  const salt = bridgeSalt(), items = [];
+  const seen = new Set();
+  ['L','R'].forEach(s => { const m = metalAt(s); if (!seen.has(m.ion)){ seen.add(m.ion); items.push([m.ionCol, m.ionH]); } });
+  ['L','R'].forEach(s => { const m = metalAt(s); if (!seen.has(m.anion)){ seen.add(m.anion); items.push([ANIONS[m.anion], ANION_H[m.anion] + ' (구경꾼)']); } });
+  items.push([K_COL, 'K<sup>+</sup> (염다리)']);
+  if (!seen.has(salt.an)) items.push([ANIONS[salt.an], ANION_H[salt.an] + ' (염다리)']);
+  items.push([E_COL, 'e<sup>−</sup> 전자']);
+  $('legend').innerHTML = items.map(([c,t]) => `<span><i style="background:${c};border:1px solid rgba(0,0,0,.2)"></i>${t}</span>`).join('');
+}
+
+/* =========================================================
+   UI
+   ========================================================= */
+function fillSelect(sel, withH, val){
+  sel.innerHTML = Object.keys(METALS).filter(k => withH || k !== 'H').map(k => {
+    const m = METALS[k];
+    const t = m.she ? `H⁺/H₂ (표준 수소 전극)  0.00 V` : `${m.name} ${m.ion}/${m.sym}  ${fmtE(m.E)} V`;
+    return `<option value="${k}">${S.show.hide ? t.replace(/[+−]?\d\.\d\d V/, '') : t}</option>`;
+  }).join('');
+  sel.value = val;
+}
+function refreshSelects(){
+  fillSelect($('m1metal'), false, S.m1);
+  fillSelect($('selL'), true, S.left);
+  fillSelect($('selR'), true, S.right);
+}
+function applyMode1(){
+  const m = METALS[S.m1];
+  if (m.E < 0){ S.left = S.m1; S.right = 'H'; } else { S.left = 'H'; S.right = S.m1; }
+}
+function setMode(n){
+  S.mode = n;
+  $('tab1').classList.toggle('on', n===1); $('tab2').classList.toggle('on', n===2);
+  $('m1ctl').style.display = n===1 ? '' : 'none';
+  $('m2ctl').style.display = n===2 ? '' : 'none';
+  if (n === 1) applyMode1();
+  else { if (S.left === 'H' || S.right === 'H'){ S.left = 'Zn'; S.right = 'Cu'; } }
+  refreshSelects(); resetSim();
+}
+$('tab1').onclick = () => setMode(1);
+$('tab2').onclick = () => setMode(2);
+$('m1metal').onchange = e => { S.m1 = e.target.value; applyMode1(); resetSim(); };
+$('selL').onchange = e => { S.left = e.target.value; resetSim(); };
+$('selR').onchange = e => { S.right = e.target.value; resetSim(); };
+$('swap').onclick = () => { [S.left, S.right] = [S.right, S.left]; refreshSelects(); resetSim(); };
+$('play').onclick = () => { S.running = !S.running; $('play').textContent = S.running ? '⏸ 일시정지' : '▶ 재생'; };
+$('reset').onclick = () => resetSim();
+$('speed').oninput = e => { S.speed = +e.target.value; $('spv').textContent = S.speed + '×'; };
+$('tE').onchange = e => S.show.e = e.target.checked;
+$('tLab').onchange = e => S.show.lab = e.target.checked;
+$('tBr').onchange = e => S.show.br = e.target.checked;
+$('tSp').onchange = e => S.show.sp = e.target.checked;
+$('tHide').onchange = e => { S.show.hide = e.target.checked; refreshSelects(); updatePanel(); };
+$('png').onclick = () => {
+  draw();
+  const a = document.createElement('a');
+  a.download = `화학전지_${S.left}-${S.right}.png`;
+  a.href = cv.toDataURL('image/png'); a.click();
+};
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !['SELECT','INPUT','BUTTON'].includes(document.activeElement.tagName)){ e.preventDefault(); $('play').click(); }
+});
+
+/* 루프 */
+let last = performance.now(), cntTimer = 0;
+function loop(now){
+  let dt = Math.min(0.05, (now - last)/1000); last = now;
+  if (S.running){ update(dt * S.speed); cntTimer += dt; if (cntTimer > .15){ cntTimer = 0; updateCounts(false); } }
+  draw();
+  requestAnimationFrame(loop);
+}
+refreshSelects();
+applyMode1();
+resetSim();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
